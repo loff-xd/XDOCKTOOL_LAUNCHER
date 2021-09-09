@@ -10,6 +10,8 @@ import time
 import tkinter.messagebox
 import zipfile
 import sys as system
+from threading import Thread
+
 import cffi  # KEEP THIS CAUSE PYINSTALLER IS WEIRD
 from tkinter import ttk
 from tkinter import *
@@ -68,11 +70,12 @@ def do_application_update():
         tkinter.messagebox.showerror("Update Error", "Error installing application update:\n" + str(e))
         system.exit()
 
-    try:
-        shutil.copy(manifests_file_old, manifests_file)
-        shutil.rmtree(bin_dir_backup)
-    except Exception as e:
-        tkinter.messagebox.showerror("Update Error", "Error upgrading manifests file (it may be missing):\n" + str(e))
+    if os.path.isfile(manifests_file_old):
+        try:
+            shutil.copy(manifests_file_old, manifests_file)
+            shutil.rmtree(bin_dir_backup)
+        except Exception as e:
+            tkinter.messagebox.showerror("Update Error", "Error upgrading manifests file:\n" + str(e))
 
     text_update("Update completed.")
     time.sleep(3)
@@ -167,7 +170,14 @@ log_text.rowconfigure(0, weight=1)
 log_text.insert(INSERT, "--- X-DOCK Manager Launcher ---\n\n")
 log_text['state'] = 'disabled'
 
+progress_bar = ttk.Progressbar(root_container, mode='indeterminate')
+progress_bar.grid(column=0, row=1, sticky=(N, S, E, W))
+progress_bar.start()
 
+root.update_idletasks()
 root.overrideredirect(1)
-root.after(1000, launcher_run)
+
+launcher_thread = Thread(target=launcher_run, daemon=True)
+launcher_thread.start()
+
 root.mainloop()
