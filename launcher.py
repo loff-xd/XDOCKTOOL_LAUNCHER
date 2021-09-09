@@ -4,19 +4,18 @@ __author__ = "Lachlan Angus"
 __copyright__ = "Copyright 2021, Lachlan Angus"
 
 import os
-import sys
 import shutil
 import subprocess
 import tkinter.messagebox
 import zipfile
+import sys as system
+import cffi  # KEEP THIS CAUSE PYINSTALLER IS WEIRD
 from tkinter import ttk
 from tkinter import *
 from tkinter.messagebox import askyesno
 
 import requests
 from github import Github
-
-sys.path.append(os.path.join(os.getcwd(), 'lib'))
 
 launcher_version = "1.0.0"
 launcher_dir = os.getcwd()
@@ -49,7 +48,7 @@ def do_application_update():
 
     except Exception as e:
         tkinter.messagebox.showerror("Update Error", "Error downloading application update:\n" + str(e))
-        quit()
+        system.exit()
 
     os.rename(bin_dir, bin_dir_backup)
     os.mkdir(bin_dir)
@@ -78,7 +77,7 @@ def do_application_install():
 
     except Exception as e:
         tkinter.messagebox.showerror("Application Error", "Error installing application:\n" + str(e))
-        quit()
+        system.exit()
 
 
 def launcher_run(*args):
@@ -95,10 +94,10 @@ def launcher_run(*args):
     try:
         subprocess.Popen(os.path.join(application_dir, "XDOCK_MANAGER.exe"))
         root.destroy()
-        quit()
+        system.exit()
     except Exception as e:
         tkinter.messagebox.showerror("Application Error", "Error launching application:\n" + str(e))
-        quit()
+        system.exit()
 
 
 def check_application_update():
@@ -125,7 +124,8 @@ def check_application_update():
 
 root = Tk()
 root.title("X-Dock Manager Launcher")
-root.iconbitmap("")
+root.iconbitmap("XDMGR.ico")
+root.attributes('-topmost', True)
 
 w = 480
 h = 320
