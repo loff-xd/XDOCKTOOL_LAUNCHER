@@ -6,6 +6,7 @@ __copyright__ = "Copyright 2021, Lachlan Angus"
 import os
 import shutil
 import subprocess
+import time
 import tkinter.messagebox
 import zipfile
 import sys as system
@@ -24,6 +25,8 @@ bin_dir_backup = os.path.join(os.getcwd(), "bin_old")
 application_dir = os.path.join(bin_dir, "XDOCK_MANAGER")
 manifests_file = os.path.join(application_dir, "manifests.json")
 manifests_file_old = os.path.join(bin_dir_backup, "XDOCK_MANAGER", "manifests.json")
+print(manifests_file_old)
+print(manifests_file)
 
 if "GTOKEN" in os.environ.keys():
     g = Github(os.environ.get("GTOKEN"))
@@ -50,15 +53,29 @@ def do_application_update():
         tkinter.messagebox.showerror("Update Error", "Error downloading application update:\n" + str(e))
         system.exit()
 
-    os.rename(bin_dir, bin_dir_backup)
-    os.mkdir(bin_dir)
+    try:
+        if os.path.isdir(bin_dir_backup):
+            shutil.rmtree(bin_dir_backup)
 
-    text_update("Unzipping application...")
-    with zipfile.ZipFile("update.zip", 'r') as update_zip:
-        update_zip.extractall(bin_dir)
-    os.remove("update.zip")
+        os.rename(bin_dir, bin_dir_backup)
+        os.mkdir(bin_dir)
 
-    shutil.copy(manifests_file_old, manifests_file)
+        text_update("Unzipping application...")
+        with zipfile.ZipFile("update.zip", 'r') as update_zip:
+            update_zip.extractall(bin_dir)
+        os.remove("update.zip")
+    except Exception as e:
+        tkinter.messagebox.showerror("Update Error", "Error installing application update:\n" + str(e))
+        system.exit()
+
+    try:
+        shutil.copy(manifests_file_old, manifests_file)
+        shutil.rmtree(bin_dir_backup)
+    except Exception as e:
+        tkinter.messagebox.showerror("Update Error", "Error upgrading manifests file (it may be missing):\n" + str(e))
+
+    text_update("Update completed.")
+    time.sleep(3)
 
 
 def do_application_install():
@@ -88,10 +105,9 @@ def launcher_run(*args):
         if check_application_update():
             if askyesno("Update available", "Update to latest release?"):
                 do_application_update()
-            else:
-                text_update("Update skipped.")
 
     try:
+        time.sleep(0.5)
         subprocess.Popen(os.path.join(application_dir, "XDOCK_MANAGER.exe"))
         root.destroy()
         system.exit()
@@ -100,6 +116,7 @@ def launcher_run(*args):
         system.exit()
 
 
+# noinspection PyBroadException
 def check_application_update():
     text_update("Checking for application update...")
     try:
@@ -116,9 +133,8 @@ def check_application_update():
                 text_update("Application up to date.")
                 return False
 
-    except Exception as e:
-        tkinter.messagebox.showerror("Application Error", "Error parsing version file:\n" + str(e))
-        text_update("Error doing update check.")
+    except:
+        text_update("Skipping update check due to error")
         return False
 
 
