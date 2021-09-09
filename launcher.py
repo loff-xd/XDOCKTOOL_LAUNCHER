@@ -4,6 +4,7 @@ __author__ = "Lachlan Angus"
 __copyright__ = "Copyright 2021, Lachlan Angus"
 
 import os
+import sys
 import shutil
 import subprocess
 import tkinter.messagebox
@@ -14,6 +15,8 @@ from tkinter.messagebox import askyesno
 
 import requests
 from github import Github
+
+sys.path.append(os.path.join(os.getcwd(), 'lib'))
 
 launcher_version = "1.0.0"
 launcher_dir = os.getcwd()
