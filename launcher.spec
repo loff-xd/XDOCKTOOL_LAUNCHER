@@ -7,7 +7,10 @@ block_cipher = None
 a = Analysis(['launcher.py'],
              pathex=['C:\\Users\\Loff0\\PycharmProjects\\X-Dock_Manager'],
              binaries=[],
-             datas=[('XDMGR.ico', '.')],
+             datas=[
+             ('XDMGR.ico', '.'),
+             ('XDMGR_S.png', '.')
+             ],
              hiddenimports=[],
              hookspath=[],
              hooksconfig={},

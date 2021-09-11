@@ -16,19 +16,20 @@ import cffi  # KEEP THIS CAUSE PYINSTALLER IS WEIRD
 from tkinter import ttk
 from tkinter import *
 from tkinter.messagebox import askyesno
+from PIL import Image, ImageTk
 
 import requests
 from github import Github
 
-launcher_version = "1.0.0"
+os.chdir(os.path.dirname(system.argv[0]))  # Keep correct working dir when args passed from windows
+
+launcher_version = "1.0.1"
 launcher_dir = os.getcwd()
 bin_dir = os.path.join(os.getcwd(), "bin")
 bin_dir_backup = os.path.join(os.getcwd(), "bin_old")
 application_dir = os.path.join(bin_dir, "XDOCK_MANAGER")
 manifests_file = os.path.join(application_dir, "manifests.json")
 manifests_file_old = os.path.join(bin_dir_backup, "XDOCK_MANAGER", "manifests.json")
-print(manifests_file_old)
-print(manifests_file)
 
 if "GTOKEN" in os.environ.keys():
     g = Github(os.environ.get("GTOKEN"))
@@ -78,7 +79,7 @@ def do_application_update():
             tkinter.messagebox.showerror("Update Error", "Error upgrading manifests file:\n" + str(e))
 
     text_update("Update completed.")
-    time.sleep(3)
+    time.sleep(1)
 
 
 def do_application_install():
@@ -111,7 +112,13 @@ def launcher_run(*args):
 
     try:
         time.sleep(0.5)
-        subprocess.Popen(os.path.join(application_dir, "XDOCK_MANAGER.exe"))
+
+        if len(system.argv) > 1:
+            print(system.argv[1])
+            subprocess.Popen([os.path.join(application_dir, "XDOCK_MANAGER.exe"), system.argv[1]])
+        else:
+            subprocess.Popen(os.path.join(application_dir, "XDOCK_MANAGER.exe"))
+
         root.destroy()
         system.exit()
     except Exception as e:
@@ -145,9 +152,10 @@ root = Tk()
 root.title("X-Dock Manager Launcher")
 root.iconbitmap("XDMGR.ico")
 root.attributes('-topmost', True)
+root.configure(bg='grey')
 
-w = 480
-h = 320
+w = 560
+h = 260
 ws = root.winfo_screenwidth()
 hs = root.winfo_screenheight()
 x = (ws/2) - (w/2)
@@ -160,18 +168,24 @@ root.rowconfigure(0, weight=1)
 root_container = ttk.Frame(root)
 root_container.grid(column=0, row=0, sticky=(N, S, E, W))
 root_container.columnconfigure(0, weight=1)
+root_container.columnconfigure(1, weight=1)
 root_container.rowconfigure(0, weight=1)
 root_container.grid_configure(padx=10, pady=10)
 
-log_text = Text(root_container)
-log_text.grid(column=0, row=0, sticky=(N, S, E, W))
+app_image = Canvas(root_container, width=520, height=200, bg='white')
+app_image.grid(column=0, row=0, sticky=(N, S, E, W))
+app_image_file = ImageTk.PhotoImage(Image.open("XDMGR_S.png"))
+app_image.create_image(0, 0, image=app_image_file, anchor=NW)
+
+log_text = Text(root_container, bd=0)
+log_text.grid(column=1, row=0, sticky=(N, S, E, W))
 log_text.columnconfigure(0, weight=1)
 log_text.rowconfigure(0, weight=1)
 log_text.insert(INSERT, "--- X-DOCK Manager Launcher ---\n\n")
 log_text['state'] = 'disabled'
 
 progress_bar = ttk.Progressbar(root_container, mode='indeterminate')
-progress_bar.grid(column=0, row=1, sticky=(N, S, E, W))
+progress_bar.grid(column=0, row=1, sticky=(N, S, E, W), columnspan=2)
 progress_bar.start()
 
 root.update_idletasks()
