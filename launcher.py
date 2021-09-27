@@ -25,7 +25,7 @@ from github import Github
 
 os.chdir(os.path.dirname(system.argv[0]))  # Keep correct working dir when args passed from windows
 
-launcher_version = "1.0.2"
+launcher_version = "1.0.2.0"
 launcher_dir = os.getcwd()
 bin_dir = os.path.join(os.getcwd(), "bin")
 bin_dir_backup = os.path.join(os.getcwd(), "bin_old")
