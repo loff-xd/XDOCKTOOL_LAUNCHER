@@ -25,7 +25,7 @@ from github import Github
 
 os.chdir(os.path.dirname(system.argv[0]))  # Keep correct working dir when args passed from windows
 
-launcher_version = "1.0.2.0"
+launcher_version = "1.0.3.0"
 launcher_dir = os.getcwd()
 bin_dir = os.path.join(os.getcwd(), "bin")
 bin_dir_backup = os.path.join(os.getcwd(), "bin_old")
@@ -62,9 +62,12 @@ class LauncherApplication:
         self.log_text.insert(tk.INSERT, "--- X-DOCK Manager Launcher ---\n\n")
         self.log_text['state'] = 'disabled'
 
-        self.progress_bar = ttk.Progressbar(self.container, mode='indeterminate')
+        self.progress_bar = ttk.Progressbar(self.container, mode='indeterminate', length=100)
         self.progress_bar.grid(column=0, row=1, sticky='nsew', columnspan=2)
         self.progress_bar.start()
+
+        self.abort_button = ttk.Button(self.container, text="X", width=2, command=system.exit)
+        self.abort_button.grid(column=1, row=1, sticky='e')
 
     def text_update(self, text):
         self.log_text['state'] = 'normal'
@@ -74,6 +77,7 @@ class LauncherApplication:
 
 def launcher_run(*args):
     if not os.path.isdir(os.path.join(os.getcwd(), "bin")):
+        main_window.text_update("No application found!")
         do_application_install()
 
     else:
@@ -110,8 +114,9 @@ def check_application_update():
             tkinter.messagebox.showinfo("Launcher update", "New launcher update found! "
                                                            "Please download from the releases page:\n"
                                                            "https://github.com/loff-xd/XDOCKTOOL_LAUNCHER/releases")
-    except:
+    except Exception as e:
         main_window.text_update("Skipping launcher update due to error.")
+        print(e)
 
     try:
         with open(os.path.join(application_dir, "application.version")) as version_file:
@@ -127,8 +132,9 @@ def check_application_update():
                 main_window.text_update("Application up to date.")
                 return False
 
-    except:
+    except Exception as e:
         main_window.text_update("Skipping update check due to error")
+        print(e)
         return False
 
 
@@ -136,12 +142,26 @@ def do_application_install():
     main_window.text_update("Downloading application...")
 
     try:
-        os.mkdir(bin_dir)
         release = g.get_user(login='loff-xd').get_repo("XDOCKTOOL").get_latest_release().get_assets()[0]
         update = requests.get(release.browser_download_url, allow_redirects=True)
-        open("update.zip", 'wb').write(update.content)
+        # open("update.zip", 'wb').write(update.content)
+
+        with open("update.zip", 'wb') as upfile:
+            update_size = int(update.headers.get('content-length'))
+            if update_size is not None:
+                main_window.progress_bar.config(mode="determinate")
+                update_progress = 0
+                for chunk in update.iter_content(chunk_size=4096):
+                    upfile.write(chunk)
+                    update_progress += len(chunk)
+                    main_window.progress_bar['value'] = int(100 * (update_progress / update_size))
+                main_window.progress_bar.config(mode="indeterminate")
+
+            else:
+                upfile.write(update.content)
 
         main_window.text_update("Unzipping application...")
+        os.mkdir(bin_dir)
         with zipfile.ZipFile("update.zip", 'r') as update_zip:
             update_zip.extractall(bin_dir)
         os.remove("update.zip")
@@ -157,7 +177,21 @@ def do_application_update():
     try:
         release = g.get_user(login='loff-xd').get_repo("XDOCKTOOL").get_latest_release().get_assets()[0]
         update = requests.get(release.browser_download_url, allow_redirects=True)
-        open("update.zip", 'wb').write(update.content)
+        # open("update.zip", 'wb').write(update.content)
+
+        with open("update.zip", 'wb') as upfile:
+            update_size = int(update.headers.get('content-length'))
+            if update_size is not None:
+                main_window.progress_bar.config(mode="determinate")
+                update_progress = 0
+                for chunk in update.iter_content(chunk_size=4096):
+                    upfile.write(chunk)
+                    update_progress += len(chunk)
+                    main_window.progress_bar['value'] = int(100 * (update_progress / update_size))
+                main_window.progress_bar.config(mode="indeterminate")
+
+            else:
+                upfile.write(update.content)
 
     except Exception as e:
         tkinter.messagebox.showerror("Update Error", "Error downloading application update:\n" + str(e))
