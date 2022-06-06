@@ -173,13 +173,13 @@ def do_application_install(forced=False):
                                          "Alternatively, manually "
                                          "download XDOCKTOOL from github and extract to this folder: "
                                          "\n" + application_dir)
-        close_launcher(forced=forced)
+        close_launcher()
 
     except Exception as e:
         if not forced:
 
             raise_error("Application Error", "Error installing application:\n" + str(e))
-            close_launcher(forced=forced)
+            close_launcher()
         else:
 
             tb = traceback.format_exception(sys.exc_info(), value=e, tb=e.__traceback__)
@@ -187,7 +187,7 @@ def do_application_install(forced=False):
             raise_error("Application Error", "Error repairing application!\nPlease send the "
                                              "following information to the developer:\n\n" +
                         "".join(tb))
-            close_launcher(forced=forced)
+            close_launcher()
 
 
 def do_application_update():
@@ -233,16 +233,10 @@ def do_application_update():
         close_launcher()
 
 
-def close_launcher(forced=False):
+def close_launcher():
     spinner_stop()
-    if not launcher_stop.is_set() and not forced:
-        root.destroy()
-        while True:
-            system.exit()
-    else:
-        root.destroy()
-        while True:
-            system.exit()
+    root.destroy()
+    system.exit()
 
 
 def do_install_recovery():
@@ -253,7 +247,7 @@ def do_install_recovery():
             time.sleep(0.25)
             root.update()
         do_application_install(forced=True)
-        close_launcher(forced=True)
+        close_launcher()
 
 
 def recover_install(*args):
