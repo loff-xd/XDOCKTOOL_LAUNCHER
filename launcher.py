@@ -15,9 +15,8 @@ import zipfile
 import sys as system
 import time
 
-from tkinter import ttk
 import tkinter as tk
-from tkinter.messagebox import askyesno
+import tkinter.messagebox
 from PIL import Image, ImageTk
 
 import requests
@@ -44,58 +43,42 @@ class LauncherApplication:
     def __init__(self, parent):
         self.parent = parent
 
-        self.container = tk.Frame(parent)
+        self.container = tk.Frame(parent, bg=bg_colour)
         self.container.grid(column=0, row=0, sticky='nsew')
         self.container.columnconfigure(0, weight=1)
-        self.container.columnconfigure(1, weight=1)
         self.container.rowconfigure(0, weight=1)
-        self.container.grid_configure(padx=10, pady=10)
 
-        self.app_image = tk.Canvas(self.container, width=520, height=200, bg='white')
+        self.app_image = tk.Canvas(self.container, bg=bg_colour, bd=0, highlightthickness=0)
         self.app_image.grid(column=0, row=0, sticky='nsew')
         self.app_image_file = ImageTk.PhotoImage(Image.open("XDMGR_S.png"))
-        self.app_image.create_image(0, 0, image=self.app_image_file, anchor='nw')
+        self.app_image.create_image(w / 2, h / 2.5, image=self.app_image_file, anchor='center')
 
-        self.log_text = tk.Text(self.container, bd=0)
-        self.log_text.grid(column=1, row=0, sticky='nsew')
-        self.log_text.columnconfigure(0, weight=1)
-        self.log_text.rowconfigure(0, weight=1)
-        self.log_text.insert(tk.INSERT, "--- X-DOCK Manager Launcher ---\n\n")
-        self.log_text['state'] = 'disabled'
+        self.progress_bar = tk.Label(self.container, text="\\|/-", bg=bg_colour, fg=fg_text, font="Courier 14 bold")
+        self.progress_bar.grid(column=0, row=0, sticky="sew", pady=(0, 48))
 
-        self.progress_bar = ttk.Progressbar(self.container, mode='indeterminate', length=100)
-        self.progress_bar.grid(column=0, row=1, sticky='nsew', columnspan=2)
-        self.progress_bar.start()
+        self.log_text = tk.Label(self.container, text="Checking for update...", bg=bg_colour, fg=fg_text,
+                                 font="Courier 9 italic")
+        self.log_text.grid(column=0, row=0, sticky="sew", pady=(0, 8))
 
-        self.abort_button = ttk.Button(self.container, text="X", width=2, command=system.exit)
-        self.abort_button.grid(column=1, row=1, sticky='e')
+        self.abort_button = tk.Button(self.container, text="X", width=2, command=system.exit, bd=0, bg=bg_colour,
+                                      fg=fg_text)
+        self.abort_button.grid(column=0, row=0, sticky='ne')
 
     def text_update(self, text):
-        self.log_text['state'] = 'normal'
-        self.log_text.insert(tk.INSERT, text + "\n")
-        self.log_text['state'] = 'disabled'
-
-    def stop(self):
-        self.progress_bar.stop()
-        self.progress_bar['mode'] = "determinate"
-        self.progress_bar['value'] = 100
+        self.log_text['text'] = text
 
 
 def launcher_run(*args):
-    main_window.text_update("Press <L_ALT> for install repair\n")
-    root.update()
-    time.sleep(0.5)
     if len(system.argv) > 1:
         print(system.argv[1])
-        main_window.text_update("Open file requested:\n" + system.argv[1])
+        main_window.text_update("Open file requested: " + system.argv[1])
 
     if not os.path.isdir(os.path.join(os.getcwd(), "bin")) and not launcher_stop.is_set():
-        main_window.text_update("No application found!")
         do_application_install()
 
     elif not launcher_stop.is_set():
         if check_application_update():
-            if askyesno("Update available", "Update to latest release?"):
+            if tk.messagebox.askyesno("Update available", "Update to latest release?"):
                 do_application_update()
 
     try:
@@ -104,11 +87,10 @@ def launcher_run(*args):
                 subprocess.Popen([os.path.join(application_dir, "XDOCK_MANAGER.exe"), system.argv[1]])
             else:
                 subprocess.Popen(os.path.join(application_dir, "XDOCK_MANAGER.exe"))
-
             close_launcher()
 
     except Exception as e:
-        main_window.stop()
+
         raise_error("Application Error", "Error launching application:\n" + str(e))
         close_launcher()
 
@@ -143,15 +125,14 @@ def check_application_update():
                 return False
 
     except Exception as e:
-        main_window.text_update("Skipping update check due to error")
+        main_window.text_update("Skipped update check due to error")
         return False
 
 
 def do_application_install(forced=False):
     if forced:
-        main_window.text_update("!! Performing forced update\n")
+        main_window.text_update("Performing forced update...")
         root.update()
-    main_window.text_update("Downloading application...")
 
     try:
         release = g.get_user(login='loff-xd').get_repo("XDOCKTOOL").get_latest_release().get_assets()[0]
@@ -160,13 +141,11 @@ def do_application_install(forced=False):
         with open(update_file, 'wb') as upfile:
             update_size = int(update.headers.get('content-length'))
             if update_size is not None:
-                main_window.progress_bar.config(mode="determinate")
                 update_progress = 0
                 for chunk in update.iter_content(chunk_size=4096):
                     upfile.write(chunk)
                     update_progress += len(chunk)
-                    main_window.progress_bar['value'] = int(100 * (update_progress / update_size))
-                main_window.progress_bar.config(mode="indeterminate")
+                    main_window.text_update("Downloading application... (" + str(int(100*(update_progress/update_size))) + "%)")
 
             else:
                 upfile.write(update.content)
@@ -184,12 +163,9 @@ def do_application_install(forced=False):
         main_window.text_update("Unzipping application...")
         with zipfile.ZipFile(update_file, 'r') as update_zip:
             update_zip.extractall(bin_dir)
-
-        main_window.text_update("Cleanup...")
         os.remove(update_file)
 
         if forced:
-            main_window.stop()
             show_info("Application Repair", "Repair was successful.\nPlease restart the application")
 
     except GithubException as e:
@@ -201,11 +177,11 @@ def do_application_install(forced=False):
 
     except Exception as e:
         if not forced:
-            main_window.stop()
+
             raise_error("Application Error", "Error installing application:\n" + str(e))
             close_launcher(forced=forced)
         else:
-            main_window.stop()
+
             tb = traceback.format_exception(sys.exc_info(), value=e, tb=e.__traceback__)
             print(tb)
             raise_error("Application Error", "Error repairing application!\nPlease send the "
@@ -224,19 +200,17 @@ def do_application_update():
         with open(update_file, 'wb') as upfile:
             update_size = int(update.headers.get('content-length'))
             if update_size is not None:
-                main_window.progress_bar.config(mode="determinate")
                 update_progress = 0
                 for chunk in update.iter_content(chunk_size=4096):
                     upfile.write(chunk)
                     update_progress += len(chunk)
-                    main_window.progress_bar['value'] = int(100 * (update_progress / update_size))
-                main_window.progress_bar.config(mode="indeterminate")
+                    main_window.text_update("Downloading application... (" + str(int(100*(update_progress/update_size))) + "%)")
 
             else:
                 upfile.write(update.content)
 
     except Exception as e:
-        main_window.stop()
+
         raise_error("Update Error", "Error downloading application update:\n" + str(e))
         close_launcher()
 
@@ -251,17 +225,16 @@ def do_application_update():
         main_window.text_update("Unzipping application...")
         with zipfile.ZipFile(update_file, 'r') as update_zip:
             update_zip.extractall(bin_dir)
-
-        main_window.text_update("Cleanup...")
         os.remove(update_file)
 
     except Exception as e:
-        main_window.stop()
+
         raise_error("Update Error", "Error installing application update:\n" + str(e))
         close_launcher()
 
 
 def close_launcher(forced=False):
+    spinner_stop()
     if not launcher_stop.is_set() and not forced:
         root.destroy()
         while True:
@@ -275,7 +248,7 @@ def close_launcher(forced=False):
 def do_install_recovery():
     if not launcher_stop.is_set():
         launcher_stop.set()
-        main_window.text_update("!! Installation repair requested\n!! Waiting for other jobs to stop...")
+        main_window.text_update("!! Installation repair requested !!")
         while launcher_thread.is_alive():
             time.sleep(0.25)
             root.update()
@@ -297,15 +270,27 @@ def show_info(title, content):
     tkinter.messagebox.showinfo(title, content, parent=root)
 
 
+def spinner_run(n=0):
+    global spinner_timer
+    if n == len(spinner_elem):
+        n = 0
+    main_window.progress_bar["text"] = spinner_elem[n]
+    spinner_timer = root.after(100, spinner_run, n + 1)
+
+
+def spinner_stop():
+    if spinner_timer:
+        root.after_cancel(spinner_timer)
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("X-Dock Manager Launcher")
     root.iconbitmap("XDMGR.ico")
     root.attributes('-topmost', True)
-    root.configure(bg='grey')
 
-    w = 560
-    h = 260
+    w = 480
+    h = 220
     ws = root.winfo_screenwidth()
     hs = root.winfo_screenheight()
     x = (ws / 2) - (w / 2)
@@ -314,6 +299,10 @@ if __name__ == "__main__":
 
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
+
+    bg_colour = "#404040"
+    fg_text = "white"
+    spinner_elem = ["/", "-", "\\", "|"]
 
     root.update_idletasks()
     root.overrideredirect(1)
@@ -325,5 +314,8 @@ if __name__ == "__main__":
 
     launcher_thread = threading.Thread(target=launcher_run, daemon=True)
     launcher_thread.start()
+
+    spinner_timer = None
+    spinner_run()
 
     root.mainloop()
