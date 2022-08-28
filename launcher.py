@@ -60,7 +60,7 @@ class LauncherApplication:
                                  font="Courier 9 italic")
         self.log_text.grid(column=0, row=0, sticky="sew", pady=(0, 8))
 
-        self.abort_button = tk.Button(self.container, text="X", width=2, command=system.exit, bd=0, bg=bg_colour,
+        self.abort_button = tk.Button(self.container, text="Exit", width=4, command=system.exit, bd=0, bg=bg_colour,
                                       fg=fg_text)
         self.abort_button.grid(column=0, row=0, sticky='ne')
 
