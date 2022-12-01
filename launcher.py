@@ -24,7 +24,7 @@ from github import Github, GithubException
 
 os.chdir(os.path.dirname(system.argv[0]))  # Keep correct working dir when args passed from windows
 
-launcher_version = "1.0.4.0"
+launcher_version = "1.0.5.0"
 launcher_dir = os.getcwd()
 update_file = os.path.join(launcher_dir, "update.zip")
 bin_dir = os.path.join(os.getcwd(), "bin")
